@@ -45,6 +45,9 @@
 #include <opencv2/core/utils/configuration.private.hpp>
 #include <opencv2/core/hal/hal.hpp>
 
+#include <opencv2/core/utils/logger.hpp>
+#include <opencv2/core/utils/logger.defines.hpp>
+
 ////////////////////////////////////////// kmeans ////////////////////////////////////////////
 
 namespace cv
@@ -433,14 +436,30 @@ double cv::kmeans( InputArray _data, int K,
             {
                 // don't re-assign labels to avoid creation of empty clusters
                 parallel_for_(Range(0, N), KMeansDistanceComputer<true>(dists.data(), labels, data, centers), (double)divUp((size_t)(dims * N), CV_KMEANS_PARALLEL_GRANULARITY));
-                compactness = sum(Mat(Size(N, 1), CV_64F, &dists[0]))[0];
-                break;
             }
             else
             {
                 // assign labels
                 parallel_for_(Range(0, N), KMeansDistanceComputer<false>(dists.data(), labels, data, centers), (double)divUp((size_t)(dims * N * K), CV_KMEANS_PARALLEL_GRANULARITY));
             }
+
+            compactness = sum(Mat(Size(N, 1), CV_64F, &dists[0]))[0];
+
+            /* monitoring k-means iteration */
+            {
+                using namespace utils;
+
+                if (logging::getLogLevel() == logging::LOG_LEVEL_INFO)
+                {
+                  std::ostringstream ss;
+                  if (iter > 1) ss << iter - 1 << " ";
+                  ss << "KMS center_shift=" << max_center_shift << " compactness=" << compactness;
+
+                  logging::internal::writeLogMessage(logging::LOG_LEVEL_INFO, ss.str().c_str());
+                }
+            }
+
+            if (isLastIter) break;
         }
 
         if (compactness < best_compactness)
