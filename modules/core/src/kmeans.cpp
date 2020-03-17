@@ -285,7 +285,7 @@ double cv::kmeans( InputArray _data, int K,
     criteria.epsilon *= criteria.epsilon;
 
     if (criteria.type & TermCriteria::COUNT)
-        criteria.maxCount = std::min(std::max(criteria.maxCount, 2), 100);
+        criteria.maxCount = std::max(criteria.maxCount, 2);
     else
         criteria.maxCount = 100;
 
